@@ -1,7 +1,7 @@
 # WebAuthn Direct Registration for Workforce (WDR4W)
 
 - Author: @timcappalli
-- Last Updated: 2026-01-04
+- Last Updated: 2026-01-05
 - Status: Early draft for discussion
 
 ## Motivation, Background, and Goals
@@ -46,8 +46,8 @@ This proposed solution leverages a relationship between the Credential Manager v
 
 - The organization operating the WebAuthn Relying Party has a business relationship with the credential manager vendor
 - The Credential Manager vendor is responsible for securing communication between the Credential Manager App (CMA) and Credential Manager Service (CMS)
-- The Client Attester is logically part of the Credential Manager Service (CMS)
-- The Credential Manager Service (CMS) talks directly to the WebAuthn Relying Party to update user records (e.g. delegated model)
+- The Credential Manager Service (CMS) is an OAuth 2.0 Confidential Client registered with the identity provider for the WebAuthn Relying Party (WRP)
+- The Credential Manager Service (CMS) talks directly to the WebAuthn Relying Party to update user records
 - The passkey being created is an attested, device-bound passkey
 - The Credential Manager Service (CMS) is stateless in terms of the passkeys themselves (e.g. only brokers the enrollment)
 - This pattern uses Enterprise Attestation
@@ -57,25 +57,25 @@ This proposed solution leverages a relationship between the Credential Manager v
 
 Out of band, the WebAuthn Relying Party (WRP) admin configures an OAuth 2.0 Confidential Client with the Credential Manager vendor.
 
-1. An End User downloads their organization's workforce *Credential Manager App* (CMA) from an app store, launches the app, and enters their fully qualified username when prompted.
-2. The Credential Manager App (CMA) invokes a system web view with an OAuth 2.0 Authorization Request to the Credential Manager Service (CMS).
-3. The CMS does an internal lookup to discovery the identity provider for the fully qualified username the End User entered
+1. An End User downloads their organization's workforce Credential Manager App (CMA) from an app store, launches the app, and enters their fully qualified username when prompted.
+2. The CMA invokes a system web view with an OAuth 2.0 Authorization Request to the Credential Manager Service (CMS).
+3. The CMS does an internal lookup to discover the identity provider for the fully qualified username the End User entered
 4. The CMS initiates and OpenID Connect Authorization Request to the organization's IdP.
 5. The End User authenticates to the workforce identity provider (out of scope).
 6. The IdP returns an OIDC ID token to the CMS.
-7. The CMS grants tokens to it's CMA.
+7. The CMS grants tokens to its CMA.
 8. The CMA initiates a passkey creation request to the CMS.
 9. The CMS requests the appropriate WebAuthn create parameters from the WebAuthn Relying Party (WRP).
 10. The WRP replies with the appropriate parameters for the user.
 11. The CMS returns the WebAuthn parameters to the CMA.
 12. The CMA invokes a Device Platform API to request key generation in a secure element. The End User is asked to perform device-level User Verification.
-13. The Device Platform returns the public key and additional metadata such as a key/keystore attestation.
+13. The Device Platform returns the public key and additional metadata, such as a key/keystore attestation.
 14. The CMA creates a passkey (public key credential source) using the previously generated key.
 15. The CMA requests a platform attestation for app provenance.
 16. The Device Platform returns a platform-specific attestation.
 17. The CMA packages and sends the previously created elements (passkey, key store attestation, platform attestation) to the CMS.
-18. The CMS calls the Device Platform Attestation Service (PDAS) requesting a verdict for the platform attestation.
-19. The PDAS responds with a verdict.
+18. The CMS calls the Device Platform Attestation Service (DPAS) requesting a verdict for the platform attestation.
+19. The DPAS responds with a verdict.
 20. The CMS validates the attestation verdict.
 21. The CMS generates a WebAuthn attestation object using its attestation signing keys.
 22. The CMS makes a request to the WRP to link the passkey to the user object.
