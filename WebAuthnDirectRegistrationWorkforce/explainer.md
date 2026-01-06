@@ -135,12 +135,17 @@ sequenceDiagram
 
 ## Open questions
 
+### High Level and Architectural
+
 - Should the Credential Manager communicate directly with the WebAuthn RP in the user's context instead of the credential manager service acting on behalf of all users?
-- What should the origin be?
-- Should there be an indication that this is a back channel request in clientData (or somewhere else)?
-- What should the UV bit be set to, since the attestation object generation happened in the CMS?
 - Should we use terminology like "instance" to better illustrate a specific install/instance of the app? e.g. "Credential Manager App Instance".
 - App attestation is currently defined as part of the passkey generation part of the flow. It is likely that the CMS will also use app attestation to secure its APIs. Should this just be collapsed into the first OAuth exchange?
 - In general, what should this document look like from a structure standpoint? Is it a protocol? Profile? Pattern? All of the above?
   - ex: we should probably have a bare minimum security bar for the CMA and CMS communication.
 - This gets into lifecycle, but we may want to address it: if the Credential Manager Service believes the Credential Manager App instance is no longer trusted, what should happen?
+
+### Deeper Technical Details for Future Discussion
+
+- What should the origin be?
+- Should there be an indication that this is a back channel request in clientData (or somewhere else)?
+- What should the UV bit be set to, since the attestation object generation happened in the CMS?
