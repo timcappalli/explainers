@@ -26,11 +26,12 @@
 - Managed Credential Manager (MCM): a credential manager which is managed by an organization.
 - Credential Manager Application (CMA): a specific application which has credential management capabilities. For the purposes of this document, the CMA is a Managed Credential Manager (MCM).
 - Credential Manager Service (CMS): the backend or remote service supporting the Credential Manager Application (CMA).
+- Device Platform Attestation: a platform-specific attestation statement containing details about the calling app (no relationship to WebAuthn Attestation)
 - Enterprise Attestation (EA): an attestation pattern which allows the authenticator/credential manager to provide a unique identity
-- WebAuthn Relying Party (WRP): the entity whose web application or native app utilizes the WebAuthn API, typically an identity provider. See [webauthn-3](https://www.w3.org/TR/webauthn-3/#relying-party).
-- Workforce:
-- Unmanaged device: an end user device where an organization has no administrative access to monitor or enforce device-level security policies .
 - WebAuthn Attestation Object: a package of data [defined in WebAuthn](https://www.w3.org/TR/webauthn-3/#attestation-object) which carries the result of a WebAuthn create ceremony.
+- WebAuthn Relying Party (WRP): the entity whose web application or native app utilizes the WebAuthn API, typically an identity provider. See [webauthn-3](https://www.w3.org/TR/webauthn-3/#relying-party).
+- Unmanaged device: an end user device where an organization has no administrative access to monitor or enforce device-level security policies .
+
 
 > #TODO: Some of these definitions are not great. Refine them.
 
