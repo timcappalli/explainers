@@ -143,3 +143,11 @@ sequenceDiagram
 - In general, what should this document look like from a structure standpoint? Is it a protocol? Profile? Pattern? All of the above?
   - ex: we should probably have a bare minimum security bar for the CMA and CMS communication.
 - This gets into lifecycle, but we may want to address it: if the Credential Manager Service believes the Credential Manager App instance is no longer trusted, what should happen?
+
+<script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({
+        startOnLoad: true,
+        theme: 'dark'
+ });
+</script>
