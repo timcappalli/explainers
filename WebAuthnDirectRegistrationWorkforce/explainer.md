@@ -1,7 +1,7 @@
 # WebAuthn Direct Registration for Workforce (WDR4W)
 
 - Author: @timcappalli
-- Last Updated: 2026-01-05
+- Last Updated: 2026-01-12
 - Status: Early draft for discussion
 
 ## Motivation, Background, and Goals
@@ -45,7 +45,7 @@ This proposed solution leverages a relationship between the Credential Manager v
 
 ### Assumptions
 
-- The organization operating the WebAuthn Relying Party has a business relationship with the credential manager vendor
+- The organization operating the WebAuthn Relying Party has a business relationship with the Credential Manager vendor
 - The Credential Manager vendor is responsible for securing communication between the Credential Manager App (CMA) and Credential Manager Service (CMS)
 - The Credential Manager Service (CMS) is an OAuth 2.0 Confidential Client registered with the identity provider for the WebAuthn Relying Party (WRP)
 - The Credential Manager Service (CMS) talks directly to the WebAuthn Relying Party to update user records
@@ -53,15 +53,18 @@ This proposed solution leverages a relationship between the Credential Manager v
 - The Credential Manager Service (CMS) is stateless in terms of the passkeys themselves (e.g. only brokers the enrollment)
 - This pattern uses Enterprise Attestation
 - The end user has an unmanaged device (does not exclude this pattern from being used on managed devices, though)
+- The WebAuthn Relying Party and Identity Provider are logically the same component
 
 ### Details
+
+> NOTE: Typically the WebAuthn RP (WRP), Identity Provider (IdP), User Directory (UD), OpenID Provider (OP), and OAuth 2.0 Authorization Server (AS) are components/modules of one logical service. For illustrative purposes, some of these are expanded out into discrete components, wrapped into a box representing the logical service.
 
 Out of band, the WebAuthn Relying Party (WRP) admin configures an OAuth 2.0 Confidential Client with the Credential Manager vendor.
 
 1. An End User downloads their organization's workforce Credential Manager App (CMA) from an app store, launches the app, and enters their fully qualified username when prompted.
 2. The CMA invokes a system web view with an OAuth 2.0 Authorization Request to the Credential Manager Service (CMS).
 3. The CMS does an internal lookup to discover the identity provider for the fully qualified username the End User entered
-4. The CMS initiates and OpenID Connect Authorization Request to the organization's IdP.
+4. The CMS initiates and OpenID Connect Authentication Request to the organization's IdP.
 5. The End User authenticates to the workforce identity provider (out of scope).
 6. The IdP returns an OIDC ID token to the CMS.
 7. The CMS grants tokens to its CMA.
@@ -94,43 +97,44 @@ sequenceDiagram
         participant CMA as Credential<br/>Manager<br/>App
     end
     participant CMS as Credential Manager<br/>Service
-    box rgba(220,220,220,0.2) Customer Organization's Identity Infrastructure
-        participant WRP as WebAuthn Relying Party<br/>(Resource Server)
-        participant AS as OAuth AS / OP
+    box rgba(220,220,220,0.2) Customer Organization's Identity Provider
+        participant WRPIDP as WebAuthn RP,<br/>Identity Provider
+        participant UD as User Directory
     end
     participant ATT as Device Platform <br/>Attestation Service
-    Note over CMS,AS: Out of band: Admin sets up OAuth Confidential Client
+    Note over CMS,UD: Out of band: Admin sets up OAuth Confidential Client
     EU->>CMA: Open credential manager, enter username
     rect rgb(240, 248, 255)
         note right of CMA: System Web View
-        CMA->>CMS: Initiate OAuth 2.1 Authorization Request (A)
+        CMA->>+CMS: Initiate OAuth 2.1 Authorization Request
         CMS-->>CMS: IdP Lookup
-        CMS->>AS: Initiate OpenID Connect (B)
-        EU<<-->>AS: User authenticates to workforce IdP
-        AS-->>CMS: ID Token (B)
-        CMS-->>CMA: Access Token, Refresh Token for CMS (A)
+        CMS->>+WRPIDP: OpenID Connect Authentication Request
+        EU<<-->>WRPIDP: User authenticates to workforce IdP
+        WRPIDP-->>-CMS: ID Token
+        CMS-->>-CMA: Access Token, Refresh Token for CMS
     end
     Note over CMA,CMS: Fetch vendor-specific policies and configurations
-    CMA->>CMS: Initiate passkey creation request
-    CMS->>WRP: Fetch WebAuthn create parameters
-    WRP-->>CMS: WebAuthn create parameters
-    CMS-->>CMA: Pass WebAuthn create parameters to client
-    CMA->>EUDP: Request key generation in secure element
+    CMA->>+CMS: Initiate passkey creation request
+    CMS->>+WRPIDP: Fetch WebAuthn create parameters
+    WRPIDP-->>-CMS: WebAuthn create parameters
+    CMS-->>-CMA: Pass WebAuthn create parameters to CMA
+    CMA->>+EUDP: Request key generation in secure element
     Note over EU,EUDP: User verification
-    EUDP-->>CMA: Return public key, key handle, key attestation
+    EUDP-->>-CMA: Return public key, key handle, key attestation
     CMA-->>CMA: Generate passkey
-    CMA->>EUDP: Request platform attestation
-    EUDP-->>CMA: Platform attestation response
-    CMA->>CMS: Send platform attestation, key store attestation, and public key credential source to backend
-    CMS->>ATT: Call platform attestation service for verification
-    ATT-->>CMS: Platform attestation verdict
-    CMS-->>CMS: Validate attestation verdict
+    CMA->>+EUDP: Request device platform attestation
+    EUDP-->>-CMA: Device platform attestation response
+    CMA->>+CMS: Send device platform attestation, key store attestation,<br>and public key credential source to backend
+    CMS->>+ATT: Call device platform attestation service for verification
+    ATT-->>-CMS: Device platform attestation verdict
+    CMS-->>CMS: Validate device platform attestation verdict
     CMS-->>CMS: Generate (sign) WebAuthn attestation object
-    CMS->>WRP: Send attestation object
-    WRP-->>WRP: Verify attestation
-    WRP-->>WRP: Store and link passkey to user account
-    WRP-->>CMS: Response / ACK
-    CMS-->>CMA: Return WebAuthn attestation object and ACK
+    CMS->>+WRPIDP: Send attestation object
+    WRPIDP-->>WRPIDP: Verify attestation
+    WRPIDP->>+UD: Store and link passkey to user account
+    UD-->>-WRPIDP: ACK
+    WRPIDP-->>-CMS: Response / ACK
+    CMS-->>-CMA: Return WebAuthn attestation object and ACK
 ```
 
 ## Open questions
