@@ -1,7 +1,7 @@
 # WebAuthn Direct Registration for Workforce (WDR4W)
 
 - Author: @timcappalli
-- Last Updated: 2026-01-12
+- Last Updated: 2026-06-03
 - Status: Early draft for discussion
 
 ## Motivation, Background, and Goals
@@ -30,10 +30,9 @@
 - Enterprise Attestation (EA): an attestation pattern which allows the authenticator/credential manager to provide a unique identity
 - WebAuthn Attestation Object: a package of data [defined in WebAuthn](https://www.w3.org/TR/webauthn-3/#attestation-object) which carries the result of a WebAuthn create ceremony.
 - WebAuthn Relying Party (WRP): the entity whose web application or native app utilizes the WebAuthn API, typically an identity provider. See [webauthn-3](https://www.w3.org/TR/webauthn-3/#relying-party).
-- Unmanaged device: an end user device where an organization has no administrative access to monitor or enforce device-level security policies .
+- Unmanaged device: an end user device where an organization has no administrative access to monitor or enforce device-level security policies.
 
-
-> #TODO: Some of these definitions are not great. Refine them.
+> #TODO: Align these definitions with the FIDO2 TWG Credential Manager Subgroup
 
 ## Proposed Solution
 
@@ -59,34 +58,38 @@ This proposed solution leverages a relationship between the Credential Manager v
 
 > NOTE: Typically the WebAuthn RP (WRP), Identity Provider (IdP), User Directory (UD), OpenID Provider (OP), and OAuth 2.0 Authorization Server (AS) are components/modules of one logical service. For illustrative purposes, some of these are expanded out into discrete components, wrapped into a box representing the logical service.
 
-Out of band, the WebAuthn Relying Party (WRP) admin configures an OAuth 2.0 Confidential Client with the Credential Manager vendor.
+Out of band, the WebAuthn Relying Party (WRP) admin configures an OAuth 2.1 Client with the Credential Manager vendor.
 
 1. An End User downloads their organization's workforce Credential Manager App (CMA) from an app store, launches the app, and enters their fully qualified username when prompted.
-2. The CMA invokes a system web view with an OAuth 2.0 Authorization Request to the Credential Manager Service (CMS).
+2. The CMA invokes a system web view with an OAuth 2.1 Authorization Request (A) to the Credential Manager Service (CMS).
 3. The CMS does an internal lookup to discover the identity provider for the fully qualified username the End User entered
-4. The CMS initiates and OpenID Connect Authentication Request to the organization's IdP.
+4. The CMS initiates an OAuth 2.1 Authorization Request (B) to the organization's IdP.
 5. The End User authenticates to the workforce identity provider (out of scope).
-6. The IdP returns an OIDC ID token to the CMS.
-7. The CMS grants tokens to its CMA.
-8. The CMA initiates a passkey creation request to the CMS.
-9. The CMS requests the appropriate WebAuthn create parameters from the WebAuthn Relying Party (WRP).
-10. The WRP replies with the appropriate parameters for the user.
-11. The CMS returns the WebAuthn parameters to the CMA.
-12. The CMA invokes a Device Platform API to request key generation in a secure element. The End User is asked to perform device-level User Verification.
-13. The Device Platform returns the public key and additional metadata, such as a key/keystore attestation.
-14. The CMA creates a passkey (public key credential source) using the previously generated key.
-15. The CMA requests a platform attestation for app provenance.
-16. The Device Platform returns a platform-specific attestation.
-17. The CMA packages and sends the previously created elements (passkey, key store attestation, platform attestation) to the CMS.
-18. The CMS calls the Device Platform Attestation Service (DPAS) requesting a verdict for the platform attestation.
-19. The DPAS responds with a verdict.
-20. The CMS validates the attestation verdict.
-21. The CMS generates a WebAuthn attestation object using its attestation signing keys.
-22. The CMS makes a request to the WRP to link the passkey to the user object.
-23. The WRP validates the WebAuthn attestation.
-24. The WRP stores and links the passkey to the user object.
-25. The WRP responds with a success message.
-26. The CMS returns the WebAuthn attestation object and a success message to the CMA.
+6. The IdP returns an authorization code (B) to the CMA.
+7. The CMA sends the authorization code (B) to the CMS.
+8. The CMS exchanges the authorization code with the IdP (authorization server).
+9. The IdP (AS) returns an ID Token (B) and Access Token (B).
+10. The CMS verifies the ID Token (B) and mints an Access Token (A) for the CMA.
+11. The CMS returns the Access Token (A) to the CMA.
+12. The CMA initiates a passkey creation request to the CMS.
+13. The CMS requests the appropriate WebAuthn create parameters from the WebAuthn Relying Party (WRP).
+14. The WRP replies with the appropriate parameters for the user.
+15. The CMS returns the WebAuthn parameters to the CMA.
+16. The CMA invokes a Device Platform API to request key generation in a secure element. The End User is asked to perform device-level User Verification.
+17. The Device Platform returns the public key and additional metadata, such as a key/keystore attestation.
+18. The CMA creates a passkey (public key credential source) using the previously generated key.
+19. The CMA requests a platform attestation for app provenance.
+20. The Device Platform returns a platform-specific attestation.
+21. The CMA packages and sends the previously created elements (passkey, key store attestation, platform attestation) to the CMS.
+22. The CMS calls the Device Platform Attestation Service (DPAS) requesting a verdict for the platform attestation.
+23. The DPAS responds with a verdict.
+24. The CMS validates the attestation verdict.
+25. The CMS generates a WebAuthn attestation object using its attestation signing keys.
+26. The CMS makes a request to the WRP to link the passkey to the user object.
+27. The WRP validates the WebAuthn attestation.
+28. The WRP stores and links the passkey to the user object.
+29. The WRP responds with a success message.
+30. The CMS returns the WebAuthn attestation object and a success message to the CMA.
 
 ```mermaid
 sequenceDiagram
@@ -102,17 +105,21 @@ sequenceDiagram
         participant UD as User Directory
     end
     participant ATT as Device Platform <br/>Attestation Service
-    Note over CMS,UD: Out of band: Admin sets up OAuth Confidential Client
+    Note over CMS,UD: Out of band: Admin sets up OAuth 2.1 Client
     EU->>CMA: Open credential manager, enter username
     rect rgb(240, 248, 255)
         note right of CMA: System Web View
-        CMA->>+CMS: Initiate OAuth 2.1 Authorization Request
+        CMA->>+CMS: Initiate OAuth 2.1 Authorization Request (A)
         CMS-->>CMS: IdP Lookup
-        CMS->>+WRPIDP: OpenID Connect Authentication Request
+        CMS->>+WRPIDP: Initiate OAuth 2.1 Authorization Request (B)
         EU<<-->>WRPIDP: User authenticates to workforce IdP
-        WRPIDP-->>-CMS: ID Token
-        CMS-->>-CMA: Access Token, Refresh Token for CMS
+        WRPIDP-->>-CMA: Authorization Code returned (B)
     end
+    CMA->>+CMS: Send Authorization Code to backend for exchange (B)
+    CMS->>+WRPIDP: Authorization Code exchanged (B)
+    WRPIDP-->>-CMS: ID Token + Access Token returned (B)
+    CMS-->>CMS: Mint AT/RT (A)
+    CMS-->>-CMA: Access Token, Refresh Token for CMS (A)
     Note over CMA,CMS: Fetch vendor-specific policies and configurations
     CMA->>+CMS: Initiate passkey creation request
     CMS->>+WRPIDP: Fetch WebAuthn create parameters
@@ -141,7 +148,6 @@ sequenceDiagram
 
 ### High Level and Architectural
 
-- Should the Credential Manager communicate directly with the WebAuthn RP in the user's context instead of the credential manager service acting on behalf of all users?
 - Should we use terminology like "instance" to better illustrate a specific install/instance of the app? e.g. "Credential Manager App Instance".
 - App attestation is currently defined as part of the passkey generation part of the flow. It is likely that the CMS will also use app attestation to secure its APIs. Should this just be collapsed into the first OAuth exchange?
 - In general, what should this document look like from a structure standpoint? Is it a protocol? Profile? Pattern? All of the above?
@@ -153,3 +159,11 @@ sequenceDiagram
 - What should the origin be?
 - Should there be an indication that this is a back channel request in clientData (or somewhere else)?
 - What should the UV bit be set to, since the attestation object generation happened in the CMS?
+
+## Changelog
+
+### 2026-06-03
+
+- Design Decision: CMS to WRP request is now delegated (user's context instead of service account)
+- Add additional detail around OAuth 2.1 flows (authorization code, code exchange, etc)
+- Diagram: System Web View box updated to end after authorization code is returned
